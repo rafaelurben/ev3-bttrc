@@ -7,7 +7,7 @@
 
 from BTTRC import Chat, Morse, Printer
 from multiprocessing import Process
-import os, time
+import time
 
 def morse2chat():
     while True:

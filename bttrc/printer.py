@@ -10,10 +10,12 @@ from ev3dev2.sensor import INPUT_4
 from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.button import Button
 
+from multiprocessing import Process
 import time
 
 class Printer():
     queue = []
+    button = Button()
     penupdownmover = MediumMotor(OUTPUT_C)
     pensidemover = LargeMotor(OUTPUT_A)
     papermover = LargeMotor(OUTPUT_B)
@@ -26,23 +28,25 @@ class Printer():
 
     _line_width = 1050                # NICHT ÄNDERN
 
-    _line_position = 0
+    _line_position = _line_width/2
 
     _pen_is_down = False
     _paper_is_in = False
 
     _interrupt_processing_queue = False
 
+    _calibration = False
+
     @classmethod
     def _pen_up(self):
         if self._pen_is_down:
-            self.penupdownmover.on_for_degrees(SpeedPercent(25), 180, break=True)
+            self.penupdownmover.on_for_degrees(SpeedPercent(25), 180, brake=True)
             self._pen_is_down = False
 
     @classmethod
     def _pen_down(self):
         if not self._pen_is_down and self._paper_is_in:
-            self.penupdownmover.on_for_degrees(SpeedPercent(25), -180, break=True)
+            self.penupdownmover.on_for_degrees(SpeedPercent(25), -180, brake=True)
             self._pen_is_down = True
 
     @classmethod
@@ -50,7 +54,7 @@ class Printer():
         self._pen_up()
         self.papermover.stop_action = "hold"
         while self.paperdetector.reflected_light_intensity < 50:
-            self.papermover.on(SpeedPercent(-50), break=False, block=False)
+            self.papermover.on(SpeedPercent(-50), brake=False, block=False)
         self.papermover.stop()
         self._paper_is_in = True
 
@@ -60,7 +64,7 @@ class Printer():
         self._carriage_move(0)
         self.papermover.stop_action = "hold"
         while self.paperdetector.reflected_light_intensity > 50:
-            self.papermover.on(SpeedPercent(50), break=False, block=False)
+            self.papermover.on(SpeedPercent(50), brake=False, block=False)
         self.papermover.stop()
         self.papermover.on_for_degrees(SpeedPercent(50), 600)
         self._paper_is_in = False
@@ -85,7 +89,7 @@ class Printer():
         self._carriage_move(0)
         self._line_feed()
 
-    @classmethod():
+    @classmethod
     def _print_letter(self, letter):
         self._pen_up()
 
@@ -195,7 +199,7 @@ class Printer():
                 self._carriage_move(self._line_position+seg4)
 
             move_a(pos, self.letter_spacing)
-            self.carriage_move(self._line_position + letterwidth + self.letter_spacing)
+            self._carriage_move(self._line_position + letterwidth + self.letter_spacing)
 
         elif letter == "\n":
             self._carriage_return()
@@ -207,6 +211,30 @@ class Printer():
         if self._line_position >= self._line_width:
             self._carriage_return()
 
+    @classmethod
+    def _move_left_and_right(self):
+        while self._calibration:
+            self._carriage_move(0)
+            time.sleep(0.25)
+            self._carriage_move(self._line_width)
+            time.sleep(0.25)
+        self._carriage_move(self._line_width/2)
+
+
+    @classmethod
+    def calibrate(self):
+        self._pen_down()
+        self._calibration = True
+        moveprocess = Process(target=self._move_left_and_right)
+        moveprocess.start()
+        while not self.button.enter:
+            self.button.wait_for_bump(["up","down","enter"])
+            if self.button.up:
+                self.pensidemover.on_for_degrees(SpeedPercent(25), 5)
+            elif self.button.down:
+                self.pensidemover.on_for_degrees(SpeedPercent(-25), 5)
+        self._calibration = False
+        self._pen_up()
 
     @classmethod
     def addToQueue(self, string:str):
@@ -239,5 +267,5 @@ class Printer():
                     time.sleep(0.25)
             else:
                 print("Drücke die obere Taste, um das Papier einzuziehen.")
-                Button.wait_for_bump(["up"])
+                self.button.wait_for_bump(["up"])
                 self._feed_in()
