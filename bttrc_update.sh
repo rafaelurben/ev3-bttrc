@@ -16,7 +16,7 @@ echo "Update gestartet!"
 
 echo "Update: Dateien von GitHub herunterladen..."
 wget -O bttrc_ev3.py https://raw.githubusercontent.com/rafaelurben/ev3-bttrc/master/bttrc_ev3.py
-wget -O bttrc_update.py https://raw.githubusercontent.com/rafaelurben/ev3-bttrc/master/bttrc_update.py
+wget -O bttrc_update.sh https://raw.githubusercontent.com/rafaelurben/ev3-bttrc/master/bttrc_update.sh
 wget -O bttrc_calibrate.py https://raw.githubusercontent.com/rafaelurben/ev3-bttrc/master/bttrc_calibrate.py
 
 
