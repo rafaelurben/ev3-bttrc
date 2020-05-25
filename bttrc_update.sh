@@ -33,7 +33,7 @@ cd ../
 
 echo "Update: Dateien ausführbar machen..."
 sudo chmod +x bttrc_ev3.py
-sudo chmod +x bttrc_update.py
+sudo chmod +x bttrc_update.sh
 sudo chmod +x bttrc_calibrate.py
 
 cd bttrc
