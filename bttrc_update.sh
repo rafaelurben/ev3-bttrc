@@ -6,6 +6,7 @@
 #
 # Update ausführen
 
+mkdir -p /home/robot/ev3-bttrc
 mkdir -p /home/robot/ev3-bttrc/bttrc
 cd /home/robot/ev3-bttrc
 
