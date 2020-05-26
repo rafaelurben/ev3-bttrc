@@ -5,9 +5,12 @@
 # 2020 - Rafael Urben | Matthew Haldimann
 #
 
-from BTTRC import Chat, Morse, Printer
+from bttrc import Chat, Morse, Printer
 from multiprocessing import Process
 import time
+
+def processQueue():
+    Printer.processQueue()
 
 def morse2chat():
     while True:
@@ -18,14 +21,17 @@ def chat2print():
         Printer.addToQueue(Chat.receive()+"\n")
 
 if __name__ == "__main__":
-    printprocess = Process(target=Printer.processQueue)
+    printprocess = Process(target=processQueue)
     printprocess.start()
 
     chat2printprocess = Process(target=chat2print)
     chat2printprocess.start()
 
-    morse2chatprocess = Process(target=morse2chat)
-    morse2chatprocess.start()
+    morse2chat()
 
-    # idle
-    morse2chatprocess.join()
+    print("[BTTRC] - Beenden...")
+
+    printprocess.terminate()
+    chat2printprocess.terminate()
+
+    print("[BTTRC] - Beendet!")

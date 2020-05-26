@@ -5,9 +5,7 @@
 # 2020 - Rafael Urben
 #
 
-import requests
-import time
-import os
+import requests, time, os
 
 class Chat():
     _chaturl = os.getenv("EV3_CHATURL", False)
@@ -20,22 +18,26 @@ class Chat():
 
     _chatname = "chat_"+_chatkey+"_"
 
-    geturl = str(_chaturl+_chatname+"toEV3")
-    posturl = str(_chaturl+_chatname+"fromEV3")
+    toEV3 = str(_chaturl+_chatname+"toEV3")
+    fromEV3 = str(_chaturl+_chatname+"fromEV3")
 
     @classmethod
-    def receive(self):
-        if "error" in requests.get(self.geturl).json():
-            requests.post(geturl,  data={"value": ""})
+    def receive(self, inverted=False):
+        url = self.toEV3 if not inverted else self.fromEV3
+        if "error" in requests.get(url).json():
+            requests.post(url,  data={"value": ""})
 
         while True:
-            r = requests.get(self.geturl)
+            r = requests.get(url)
             json = r.json()
             if "value" in json and not json["value"] in ["", None]:
-                requests.post(self.geturl, data={"value": ""})
+                requests.post(url, data={"value": ""})
+                print("[Chat] - Erhalten: "+json["value"])
                 return json["value"]
-            time.sleep(0.25)
+            time.sleep(0.5)
 
     @classmethod
-    def send(self, value):
-        requests.post(self.posturl, data={"value": value or ""})
+    def send(self, value, inverted=False):
+        url = self.fromEV3 if not inverted else self.toEV3
+        requests.post(url, data={"value": value or ""})
+        print("[Chat] - Gesendet: "+value)
