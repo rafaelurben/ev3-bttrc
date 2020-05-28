@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
 # Back To The Roots Communication
 #
@@ -10,20 +11,25 @@ from ev3dev2.sensor import INPUT_4
 from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.led import Leds
 from ev3dev2.button import Button
+from ev3dev2.sound import Sound
 
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 import time
 
+
 class Printer():
-    queue = []
+    _manager = Manager()
+
+    queue = _manager.list()
+
     button = Button()
     led = Leds()
+    sound = Sound()
     penupdownmover = MediumMotor(OUTPUT_C)
     pensidemover = LargeMotor(OUTPUT_A)
     papermover = LargeMotor(OUTPUT_B)
     paperdetector = ColorSensor(INPUT_4)
 
-    letter_spacing = 20
     size = 10
 
     _tank = MoveTank(OUTPUT_A, OUTPUT_B)
@@ -38,7 +44,7 @@ class Printer():
 
     @classmethod
     def _paper_is_in(self):
-        return bool(self.paperdetector.reflected_light_intensity > 20)
+        return bool(self.paperdetector.reflected_light_intensity > 3)
 
     @classmethod
     def _pen_up(self):
@@ -56,22 +62,21 @@ class Printer():
     @classmethod
     def _feed_in(self):
         self._pen_up()
-        self.papermover.stop_action = "hold"
         self.papermover.on(SpeedPercent(-50), brake=False, block=False)
         while not self._paper_is_in():
             pass
         self.papermover.stop()
+        self.papermover.on_for_degrees(SpeedPercent(50), 1)
 
     @classmethod
     def _feed_out(self):
         self._pen_up()
-        self._carriage_move(0)
-        self.papermover.stop_action = "hold"
+        self._carriage_move(self._line_width/2)
         self.papermover.on(SpeedPercent(50), brake=False, block=False)
         while self._paper_is_in():
             pass
         self.papermover.stop()
-        self.papermover.on_for_rotations(SpeedPercent(50), 3)
+        self.papermover.on_for_degrees(SpeedPercent(50), 720)
 
     @classmethod
     def _line_feed(self):
@@ -80,12 +85,12 @@ class Printer():
         self.papermover.on_for_degrees(SpeedPercent(-20), 20)
 
     @classmethod
-    def _carriage_move(self, position):
+    def _carriage_move(self, position=0):
         self._pen_up()
-        self.pensidemover.on_for_degrees(SpeedPercent(50), position-self._line_position)
         if position == 0:
-            self.pensidemover.on_for_degrees(SpeedPercent(-20), 10)
-            self.pensidemover.on_for_degrees(SpeedPercent(20), 10)
+            self._reset_motors()
+        else:
+            self.pensidemover.on_for_degrees(SpeedPercent(50), position-self._line_position)
         self._line_position = position
 
     @classmethod
@@ -95,6 +100,7 @@ class Printer():
 
     @classmethod
     def _print_letter(self, letter):
+        self.led.set_color("RIGHT", "RED")
         self._pen_up()
 
         letter = letter.upper()
@@ -104,7 +110,9 @@ class Printer():
         seg4 = self.size*4
 
         pos = SpeedPercent(20)
+        pos_slow = SpeedPercent(10)
         neg = SpeedPercent(-20)
+        neg_slow = SpeedPercent(-10)
 
         move_a = self.pensidemover.on_for_degrees
         move_b = self.papermover.on_for_degrees
@@ -153,67 +161,251 @@ class Printer():
                 pen_up()
                 move_a(pos, 10)
             elif letter == "D":
-                pass
+                pen_down()
+                move_b(neg, seg4)
+                move_a(pos, seg2)
+                move_tank(pos_slow, pos_slow, seg2)
+                move_tank(neg_slow, pos_slow, seg2)
+                move_a(neg, seg2)
+                pen_up()
+                move_a(pos, seg4)
             elif letter == "E":
-                pass
+                move_a(pos, seg4)
+                move_a(pos, -10)
+                move_b(neg, seg4)
+                pen_down()
+                move_a(neg, seg4)
+                move_b(pos, seg2)
+                move_a(pos, seg3)
+                move_a(neg, seg3)
+                move_b(pos, seg2)
+                move_a(pos, seg4)
+                pen_up()
+                move_a(pos, 10)
             elif letter == "F":
-                pass
+                move_a(pos, seg4)
+                move_a(pos, -10)
+                pen_down()
+                move_a(neg, seg4)
+                move_b(neg, seg2)
+                move_a(pos, seg3)
+                move_a(neg, seg3)
+                move_b(neg, seg2)
+                pen_up()
+                move_a(pos, 10)
+                move_a(pos, seg4)
+                move_b(pos, seg4)
             elif letter == "G":
-                pass
+                move_b(neg, seg1)
+                move_a(pos, seg4)
+                move_a(pos, -10)
+                pen_down()
+                move_tank(neg_slow, pos_slow, seg1)
+                move_a(neg, seg2)
+                move_tank(neg_slow, neg_slow, seg1)
+                move_b(neg, seg2)
+                move_tank(pos_slow, neg_slow, seg1)
+                move_a(pos, seg2)
+                move_tank(pos_slow, pos_slow, seg1)
+                move_b(neg, seg1)
+                move_b(pos, seg2)
+                move_a(neg, seg2)
+                pen_up()
+                move_b(pos, seg2)
+                move_a(pos, seg2)
+                move_a(pos, 10)
             elif letter == "H":
-                pass
+                pen_down()
+                move_b(neg, seg4)
+                move_b(pos, seg2)
+                move_a(pos, seg4)
+                move_b(neg, seg2)
+                move_b(pos, seg4)
+                pen_up()
             elif letter == "I":
-                pass
+                move_b(neg, seg4)
+                pen_down()
+                move_b(pos, seg4)
+                pen_up()
+                letterwidth = 0
             elif letter == "J":
-                pass
+                move_a(pos, seg4)
+                move_a(neg, 10)
+                pen_down()
+                move_b(neg, seg3)
+                move_tank(neg_slow, neg_slow, seg1)
+                move_a(neg_slow, seg2)
+                move_tank(neg_slow, pos_slow, seg1)
+                move_b(pos, seg1)
+                pen_up()
+                move_b(pos, seg2)
+                move_a(pos, seg4)
+                move_a(pos, 10)
             elif letter == "K":
-                pass
+                pen_down()
+                move_b(neg, seg4)
+                move_b(pos, seg2)
+                move_tank(pos, pos_slow, seg4)
+                time.sleep(0.1)
+                move_tank(neg, neg_slow, seg4)
+                move_tank(pos, neg_slow, seg4)
+                pen_up()
+                move_b(pos, seg4)
             elif letter == "L":
-                pass
+                pen_down()
+                move_b(neg, seg4)
+                move_a(pos, seg4)
+                pen_up()
+                move_b(pos, seg4)
             elif letter == "M":
-                pass
+                move_b(neg, seg4)
+                pen_down()
+                move_b(pos, seg4)
+                move_tank(pos_slow, neg_slow, seg2)
+                time.sleep(0.05)
+                move_tank(pos_slow, pos_slow, seg2)
+                move_b(neg, seg4)
+                pen_up()
+                move_b(pos, seg4)
             elif letter == "N":
-                pass
+                move_b(neg, seg4)
+                pen_down()
+                move_b(pos, seg4)
+                move_tank(pos, neg, seg4)
+                move_b(pos, seg4)
+                pen_up()
             elif letter == "O":
-                pass
+                move_b(neg, seg1)
+                pen_down()
+                move_b(neg, seg2)
+                move_tank(pos_slow, neg_slow, seg1)
+                move_a(pos, seg2)
+                move_tank(pos_slow, pos_slow, seg1)
+                move_b(pos, seg2)
+                move_tank(neg_slow, pos_slow, seg1)
+                move_a(neg, seg2)
+                move_tank(neg_slow, neg_slow, seg1)
+                pen_up()
+                move_b(pos, seg1)
+                move_a(pos, seg4)
             elif letter == "P":
-                pass
+                move_b(neg, seg4)
+                pen_down()
+                move_b(pos, seg4)
+                move_a(pos, seg4)
+                move_b(neg, seg2)
+                move_a(neg, seg4)
+                pen_up()
+                move_a(pos, seg4)
+                move_b(pos, seg2)
             elif letter == "Q":
-                pass
+                move_b(neg, seg1)
+                pen_down()
+                move_b(neg, seg2)
+                move_tank(pos_slow, neg_slow, seg1)
+                move_a(pos, seg2)
+                move_tank(pos_slow, pos_slow, seg1)
+                move_b(pos, seg2)
+                move_tank(neg_slow, pos_slow, seg1)
+                move_a(neg, seg2)
+                move_tank(neg_slow, neg_slow, seg1)
+                pen_up()
+                move_b(neg, seg1)
+                move_a(pos, seg2)
+                pen_down()
+                move_tank(pos, neg, seg2)
+                pen_up()
+                move_b(pos, seg4)
             elif letter == "R":
-                pass
+                move_b(neg, seg4)
+                pen_down()
+                move_b(pos, seg4)
+                move_a(pos, seg3)
+                move_tank(pos_slow, neg_slow, seg1)
+                move_tank(neg_slow, neg_slow, seg1)
+                move_a(neg, seg3)
+                move_a(pos, seg2)
+                move_tank(pos_slow, neg_slow, seg2)
+                pen_up()
+                move_b(pos, seg4)
             elif letter == "S":
-                pass
+                move_a(pos, seg4)
+                pen_down()
+                move_a(neg, seg4)
+                move_b(neg, seg2)
+                move_a(pos, seg4)
+                move_b(neg, seg2)
+                move_a(neg, seg4)
+                pen_up()
+                move_a(pos, seg4)
+                move_b(pos, seg4)
             elif letter == "T":
-                pass
+                pen_down()
+                move_a(pos, seg4)
+                move_a(neg, seg3)
+                move_b(neg, seg4)
+                pen_up()
+                move_b(pos, seg4)
+                move_a(pos, seg3)
             elif letter == "U":
-                pass
+                pen_down()
+                move_b(neg, seg4)
+                move_a(pos, seg4)
+                move_b(pos, seg4)
+                pen_up()
             elif letter == "V":
-                pass
+                pen_down()
+                move_tank(pos_slow, neg, seg4)
+                move_tank(pos_slow, pos, seg4)
+                pen_up()
             elif letter == "W":
-                pass
+                pen_down()
+                move_b(neg, seg4)
+                move_tank(pos_slow, pos_slow, seg2)
+                move_tank(pos_slow, neg_slow, seg2)
+                move_b(pos, seg4)
+                pen_up()
             elif letter == "X":
-                pass
+                pen_down()
+                move_tank(pos, neg, seg4)
+                pen_up()
+                move_a(neg, seg4)
+                pen_down()
+                move_tank(pos, pos, seg4)
+                pen_up()
             elif letter == "Y":
-                pass
+                pen_down()
+                move_tank(pos, neg, seg2)
+                move_b(neg, seg2)
+                move_b(pos, seg2)
+                move_tank(pos, pos, seg2)
+                pen_up()
             elif letter == "Z":
-                pass
-
+                pen_down()
+                move_a(pos, seg4)
+                move_tank(neg, neg, seg4)
+                move_a(pos, seg4)
+                pen_up()
+                move_b(pos, seg4)
             elif letter == " ":
-                self._carriage_move(self._line_position+seg4)
+                move_a(pos, seg4)
 
-            move_a(pos, self.letter_spacing)
-            self._carriage_move(self._line_position + letterwidth + self.letter_spacing)
+            move_a(pos, seg1) # letter spacing
+            self._line_position = (self._line_position + letterwidth + seg1)
 
-        elif letter == "\n":
+        elif letter in ["//NEWLINE//"]:
             self._carriage_return()
-        elif letter == "//FEEDOUT//":
+        elif letter in ["//FEEDOUT//"]:
             self._feed_out()
+        elif letter.startswith("//SOUND:") and letter.endswith("//"):
+            filename = letter[8:-1]
+            self.sound.play_file("/home/robot/ev3-bttrc/files/"+str(filename), play_type=1)
         else:
             print("[Printer] - Unbekannter Buchstabe/Befehl: "+str(letter))
 
         if self._line_position >= self._line_width:
             self._carriage_return()
+        self.led.set_color("RIGHT", "YELLOW")
 
     @classmethod
     def _print_next(self):
@@ -229,12 +421,9 @@ class Printer():
 
     @classmethod
     def _reset_motors(self, resetheight=False):
-        self._pen_down()
-        self.pensidemover.on_for_degrees(SpeedPercent(50), -(self._line_width+50))
+        self.pensidemover.on_for_degrees(SpeedPercent(50), -(self._line_width+100))
         self.pensidemover.reset()
         self._line_position = 0
-        self._carriage_move(self._line_width/2)
-        time.sleep(0.5)
         if resetheight:
             self.penupdownmover.reset()
             self._pen_is_down = True
@@ -242,22 +431,10 @@ class Printer():
 
     @classmethod
     def calibrate(self):
-        self.led.set_color("LEFT", "ORANGE")
-        self.led.set_color("RIGHT", "ORANGE")
-
-        print("[Printer] - Bitte sorge dafuer, dass der Druckkopf ganz unten ist und druecke danach ENTER.")
-        self.button.wait_for_bump(["enter"])
-
         if not self._paper_is_in():
             self._feed_in()
 
-        self._reset_motors(resetheight=True)
-
-        self.penupdownmover.on_for_rotations(SpeedPercent(20), 3)
-
-        print("[Printer] - Setze den Stift ein und druecke ENTER.")
-        self.button.wait_for_bump(["enter"])
-
+        print("[Printer] - Kalibrierung: Starten...")
         self.penupdownmover.on_for_rotations(SpeedPercent(20), -2.5)
 
         time.sleep(2)
@@ -268,38 +445,37 @@ class Printer():
         print("[Printer] - Kalibrierung: Gestartet!")
         while True:
             if self.button.up:
-                if not self.penupdownmover.position > 450:
-                    print("[Printer] - Kalibrierung: Nach oben!")
-                    self.penupdownmover.on_for_degrees(SpeedPercent(25), 5)
-                    print(self.penupdownmover.position)
-                else:
-                    print("[Printer] - Ich darf nicht weiter nach oben!")
+                print("[Printer] - Kalibrierung: Nach oben!")
+                self.penupdownmover.on_for_degrees(SpeedPercent(25), 5)
             elif self.button.down:
                 print("[Printer] - Kalibrierung: Nach unten!")
                 self.penupdownmover.on_for_degrees(SpeedPercent(-25), 5)
             elif self.button.enter:
-                print("[Printer] - Kalibrierung: Beendet!")
                 break
+        print("[Printer] - Kalibrierung: Beenden...")
 
         moveprocess.terminate()
 
-        time.sleep(2.5)
-        self._reset_motors(resetheight=False)
-        time.sleep(2.5)
+        time.sleep(0.5)
+        self._reset_motors(resetheight=True)
+        time.sleep(2)
         self._pen_up()
 
         self.led.all_off()
+        print("[Printer] - Kalibrierung: Beendet...")
         return
         
     @classmethod
     def addToQueue(self, string:str):
-        if string in ["\n","//FEEDOUT//"]:
-            self.queue.append(string)
-            print("[Printer] - Zur Warteschlange hinzugefuegt: "+string)
+        string = string.strip().upper()
+        if string.startswith("//"):
+            self.queue.append(string.strip())
+            print("[Printer] - Befehl zur Warteschlange hinzugefuegt: '"+string.strip().upper()+"'")
         else:
-            for letter in string.upper():
+            string = string.replace("Ä", "AE").replace("Ö", "OE").replace("Ü", "UE")
+            for letter in string:
                 self.queue.append(letter)
-                print("[Printer] - Zur Warteschlange hinzugefuegt: "+letter)
+                print("[Printer] - Zur Warteschlange hinzugefuegt: '"+letter+"'")
 
     @classmethod
     def printQueue(self, queue):
@@ -311,13 +487,14 @@ class Printer():
 
     @classmethod
     def processQueue(self):
+        self._reset_motors()
+        self.led.set_color("RIGHT", "YELLOW")
         while True:
             if self._paper_is_in():
                 if not self._interrupt_processing_queue:
-                    if self.queue != []:
+                    if self.queue[:] != []:
                         self._print_next()
-                    elif bool(Button.down):
-                        print(bool(Button.down))
+                    elif bool(self.button.down):
                         print("[Printer] - Papier wird ausgegeben...")
                         self._feed_out()
                     else:
@@ -325,6 +502,10 @@ class Printer():
                 else:
                     time.sleep(0.25)
             else:
-                print("[Printer] - Druecke die obere Taste, um das Papier einzuziehen.")
+                self.led.set_color("RIGHT", "GREEN")
+                print("[Printer] - Druecke die UP Taste!")
                 self.button.wait_for_bump(["up"])
                 self._feed_in()
+                self._carriage_move(0)
+                self.led.set_color("RIGHT", "YELLOW")
+                print("[Printer] - Bereit zum Drucken!")

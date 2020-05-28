@@ -18,20 +18,43 @@ def morse2chat():
 
 def chat2print():
     while True:
-        Printer.addToQueue(Chat.receive()+"\n")
+        txt = Chat.receive()
+        Printer.addToQueue(txt)
+        if not txt.startswith("//"):
+            Printer.addToQueue("//NEWLINE//")
 
 if __name__ == "__main__":
+    from ev3dev2.button import Button
+    from ev3dev2.led import Leds
+
+    l = Leds()
+    b = Button()
+
+    l.all_off()
+    l.set_color("LEFT","RED")
+    l.set_color("RIGHT", "RED")
+
+    print("[BTTRC] - Starten...")
+
     printprocess = Process(target=processQueue)
     printprocess.start()
 
     chat2printprocess = Process(target=chat2print)
     chat2printprocess.start()
 
-    morse2chat()
+    morse2chatprocess = Process(target=morse2chat)
+    morse2chatprocess.start()
+
+    print("[BTTRC] - Gestartet!")
+
+    b.wait_for_bump("left")
 
     print("[BTTRC] - Beenden...")
 
     printprocess.terminate()
     chat2printprocess.terminate()
+    morse2chatprocess.terminate()
 
     print("[BTTRC] - Beendet!")
+
+    l.all_off()

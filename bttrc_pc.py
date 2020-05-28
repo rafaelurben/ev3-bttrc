@@ -14,8 +14,7 @@ from multiprocessing import Process
 
 def receive():
     while True:
-        print("\n\n")
-        Chat.receive()
+        Chat.receive(inverted=True)
         print("\n")
 
 if __name__ == "__main__":
@@ -36,5 +35,7 @@ if __name__ == "__main__":
     receiveprocess = Process(target=receive)
     receiveprocess.start()
 
+    time.sleep(5)
+
     while True:
-        Chat.send(input("[Chat] - Senden: "))
+        Chat.send(input("[Chat] - Senden: "), inverted=True)

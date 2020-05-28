@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
 # Back To The Roots Communication
 #
@@ -6,6 +7,10 @@
 #
 
 import requests, time, os
+
+
+def prepareascii(text):
+    return text.replace("Ä", "<AE>").replace("Ö", "<OE>").replace("Ü", "<UE>").replace("ä", "<ae>").replace("ö", "<oe>").replace("ü", "<ue>")
 
 class Chat():
     _chaturl = os.getenv("EV3_CHATURL", False)
@@ -27,12 +32,14 @@ class Chat():
         if "error" in requests.get(url).json():
             requests.post(url,  data={"value": ""})
 
+        print("\n[Chat] - Warte auf Erhalt einer Nachricht...")
+
         while True:
             r = requests.get(url)
             json = r.json()
             if "value" in json and not json["value"] in ["", None]:
                 requests.post(url, data={"value": ""})
-                print("[Chat] - Erhalten: "+json["value"])
+                print("\n[Chat] - Erhalten: '"+prepareascii(json["value"])+"'")
                 return json["value"]
             time.sleep(0.5)
 
@@ -40,4 +47,4 @@ class Chat():
     def send(self, value, inverted=False):
         url = self.fromEV3 if not inverted else self.toEV3
         requests.post(url, data={"value": value or ""})
-        print("[Chat] - Gesendet: "+value)
+        print("[Chat] - Gesendet: '"+prepareascii(value)+"'")
