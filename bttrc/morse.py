@@ -24,7 +24,7 @@ class Morse():
     touch = TouchSensor(INPUT_1)
     display = Display()
     sound = Sound()
-    led = Leds()
+    _led = Leds()
 
     morse_alphabet = {  'A':'.-',       'B':'-...',
                         'C':'-.-.',     'D':'-..',      'E':'.',
@@ -49,9 +49,65 @@ class Morse():
     morse_alphabet_inverted = {v:k for k,v in morse_alphabet.items()}
 
     @classmethod
+    def _setState(self, state):
+        setcolor = lambda color: self._led.set_color("LEFT", color.upper())
+        if state == "PRESSED":
+            setcolor("YELLOW")
+
+        elif state == "IDLE":
+            setcolor("ORANGE")
+
+        elif state == "CANCEL":
+            setcolor("RED")
+            self.sound.beep(args="-l 250")
+
+        elif state == "CHAR_ADDED":
+            setcolor("GREEN")
+            self.sound.beep(args="-l 50")
+            self._setState("IDLE")
+
+        elif state == "SPACE_ADDED":
+            setcolor("GREEN")
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+
+        elif state == "ERROR":
+            setcolor("RED")
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+
+        elif state == "END":
+            setcolor("GREEN")
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+
+        elif state == "DELETE_WORD":
+            setcolor("GREEN")
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+            time.sleep(0.05)
+            self.sound.beep(args="-l 50")
+
+        else:
+            print("[Morse] - Status nicht gefunden...")
+
+    @classmethod
     def _print(self, text="", char="", message=""):
         print("[Morse] - Text: '"+prepareascii(text)+"' Char: '"+prepareascii(char)+"'"+((" Message: '"+prepareascii(message)+"'") if message else ""))
-
 
     @classmethod
     def enterText(self, press_short=0.15, press_timeout=1, rest_short=1, rest_timeout=3):
@@ -59,14 +115,16 @@ class Morse():
 
         text = ""
         while True:
-            self.led.set_color("LEFT", "GREEN")
+            self._setState("IDLE")
+
             char = ""
             self.touch.wait_for_pressed()
             while True:
-                self.led.set_color("LEFT", "ORANGE")
+                self._setState("PRESSED")
                 # Kurz (Punkt)
                 if self.touch.wait_for_released(timeout_ms=press_short*1000):
-                    self.led.set_color("LEFT", "YELLOW")
+                    self._setState("IDLE")
+
                     char += "."
                     self._print(text, char, "Kurz!")
 
@@ -77,18 +135,18 @@ class Morse():
 
                     # Gedrückt halten
                     if not self.touch.wait_for_released(timeout_ms=(press_timeout-press_short)*1000):
-                        self.led.set_color("LEFT", "YELLOW")
+                        self._setState("IDLE")
+
                         # Charakter zurücksetzen
                         if not char == "":
                             self._print(text, "", "Abbruch!")
 
-                            # TODO: Cancel-Sound
-                            self.sound.beep(args="-l 250")
+                            self._setState("CANCEL")
 
                             self.touch.wait_for_released()
                         break
                     else:
-                        self.led.set_color("LEFT", "YELLOW")
+                        self._setState("IDLE")
 
 
 
@@ -103,27 +161,15 @@ class Morse():
                     if char in self.morse_alphabet_inverted:
                         text += self.morse_alphabet_inverted[char]
                         self._print(text, "", "Gefunden: "+self.morse_alphabet_inverted[char])
-                        #self.display.text_grid(text=self.morse_alphabet_inverted[char], x=0, y=0,  font="luBS14", clear_screen=True)
-                        #self.display.update()
 
-                        # TODO: Char-Sound
-                        self.sound.beep(args="-l 50")
+                        self._setState("CHAR_ADDED")
+                        
 
                     # Ende der Nachricht / Ende der Übertragung
                     elif char == ".-.-." or char == "...-.-":
                         self._print(text, "", "Nachricht beendet!")
 
-                        # TODO: Ende-Sound
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-                        self.led.set_color("LEFT", "RED")
+                        self._setState("END")
                         return str(text)
 
                     # Letztes Wort entfernen
@@ -133,28 +179,13 @@ class Morse():
                             text = text[:-1]
                         self._print(text, "", "Wort geloescht!")
 
-                        # TODO: Delete-Sound
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
+                        self._setState("DELETE_WORD")
 
                     # Fehler
                     else:
                         self._print(text, char, "Nicht gefunden!!")
 
-                        # TODO: Error Sound
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-                        time.sleep(0.05)
-                        self.sound.beep(args="-l 50")
-
+                        self._setState("ERROR")
 
                     # Weiter warten
                     if not self.touch.wait_for_pressed(timeout_ms=(rest_timeout-rest_short)*1000):
@@ -163,11 +194,7 @@ class Morse():
                             text += " "
                             self._print(text, "", "Leerzeichen")
 
-                            # TODO: Leerzeichen-Sound
-                            self.sound.beep(args="-l 50")
-                            time.sleep(0.05)
-                            self.sound.beep(args="-l 50")
-
+                            self._setState("SPACE_ADDED")
 
                     # Nächster Charakter
                     break

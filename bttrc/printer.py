@@ -23,8 +23,9 @@ class Printer():
     queue = _manager.list()
 
     button = Button()
-    led = Leds()
     sound = Sound()
+    _led = Leds()
+
     penupdownmover = MediumMotor(OUTPUT_C)
     pensidemover = LargeMotor(OUTPUT_A)
     papermover = LargeMotor(OUTPUT_B)
@@ -41,6 +42,24 @@ class Printer():
     _pen_is_down = False
 
     _interrupt_processing_queue = False
+
+    @classmethod
+    def _setState(self, state):
+        setcolor = lambda color: self._led.set_color("RIGHT", color.upper())
+        if state == "IDLE":
+            setcolor("GREEN")
+
+        elif state == "WAIT":
+            setcolor("ORANGE")
+
+        elif state == "WORK":
+            setcolor("YELLOW")
+
+        elif state == "ERROR":
+            setcolor("RED")
+
+        else:
+            print("[Printer] - Status nicht gefunden...")
 
     @classmethod
     def _paper_is_in(self):
@@ -100,7 +119,7 @@ class Printer():
 
     @classmethod
     def _print_letter(self, letter):
-        self.led.set_color("RIGHT", "RED")
+        self._setState("WORK")
         self._pen_up()
 
         letter = letter.upper()
@@ -398,14 +417,17 @@ class Printer():
         elif letter in ["//FEEDOUT//"]:
             self._feed_out()
         elif letter.startswith("//SOUND:") and letter.endswith("//"):
-            filename = letter[8:-1]
-            self.sound.play_file("/home/robot/ev3-bttrc/files/"+str(filename), play_type=1)
+            filename = letter[8:-2].lower()
+            try:
+                self.sound.play_file("/home/robot/ev3-bttrc/files/"+str(filename)+".wav", play_type=1)
+            except ValueError:
+                print("[Printer] - Tondatei nicht gefunden: "+str(filename)+".wav")
         else:
             print("[Printer] - Unbekannter Buchstabe/Befehl: "+str(letter))
 
         if self._line_position >= self._line_width:
             self._carriage_return()
-        self.led.set_color("RIGHT", "YELLOW")
+        self._setState("IDLE")
 
     @classmethod
     def _print_next(self):
@@ -432,7 +454,10 @@ class Printer():
     @classmethod
     def calibrate(self):
         if not self._paper_is_in():
+            self._setState("WAIT")
             self._feed_in()
+
+        self._setState("WORK")
 
         print("[Printer] - Kalibrierung: Starten...")
         self.penupdownmover.on_for_rotations(SpeedPercent(20), -2.5)
@@ -441,6 +466,8 @@ class Printer():
 
         moveprocess = Process(target=self._move_left_and_right)
         moveprocess.start()
+
+        self._setState("IDLE")
 
         print("[Printer] - Kalibrierung: Gestartet!")
         while True:
@@ -454,6 +481,8 @@ class Printer():
                 break
         print("[Printer] - Kalibrierung: Beenden...")
 
+        self._setState("WORK")
+
         moveprocess.terminate()
 
         time.sleep(0.5)
@@ -461,7 +490,7 @@ class Printer():
         time.sleep(2)
         self._pen_up()
 
-        self.led.all_off()
+        self._led.all_off()
         print("[Printer] - Kalibrierung: Beendet...")
         return
         
@@ -488,13 +517,14 @@ class Printer():
     @classmethod
     def processQueue(self):
         self._reset_motors()
-        self.led.set_color("RIGHT", "YELLOW")
+        self._setState("IDLE")
         while True:
             if self._paper_is_in():
                 if not self._interrupt_processing_queue:
                     if self.queue[:] != []:
                         self._print_next()
                     elif bool(self.button.down):
+                        self._setState("WORK")
                         print("[Printer] - Papier wird ausgegeben...")
                         self._feed_out()
                     else:
@@ -502,10 +532,10 @@ class Printer():
                 else:
                     time.sleep(0.25)
             else:
-                self.led.set_color("RIGHT", "GREEN")
+                self._setState("WAIT")
                 print("[Printer] - Druecke die UP Taste!")
                 self.button.wait_for_bump(["up"])
                 self._feed_in()
                 self._carriage_move(0)
-                self.led.set_color("RIGHT", "YELLOW")
+                self._setState("IDLE")
                 print("[Printer] - Bereit zum Drucken!")

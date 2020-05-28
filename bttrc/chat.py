@@ -13,11 +13,9 @@ def prepareascii(text):
     return text.replace("Ä", "<AE>").replace("Ö", "<OE>").replace("Ü", "<UE>").replace("ä", "<ae>").replace("ö", "<oe>").replace("ü", "<ue>")
 
 class Chat():
-    _chaturl = os.getenv("EV3_CHATURL", False)
+    _chaturl = os.getenv("EV3_CHATURL", "https://rafaelurben.herokuapp.com/onlinevars/api/v1/")
     _chatkey = os.getenv("EV3_CHATKEY", False)
 
-    if not _chaturl:
-        raise EnvironmentError("Missing Environment variable: EV3_CHATURL")
     if not _chatkey:
         raise EnvironmentError("Missing Environment variable: EV3_CHATKEY")
 
@@ -27,8 +25,8 @@ class Chat():
     fromEV3 = str(_chaturl+_chatname+"fromEV3")
 
     @classmethod
-    def receive(self, inverted=False):
-        url = self.toEV3 if not inverted else self.fromEV3
+    def receive(self):
+        url = self.toEV3
         if "error" in requests.get(url).json():
             requests.post(url,  data={"value": ""})
 
@@ -44,7 +42,7 @@ class Chat():
             time.sleep(0.5)
 
     @classmethod
-    def send(self, value, inverted=False):
-        url = self.fromEV3 if not inverted else self.toEV3
+    def send(self, value):
+        url = self.fromEV3
         requests.post(url, data={"value": value or ""})
         print("[Chat] - Gesendet: '"+prepareascii(value)+"'")

@@ -32,16 +32,16 @@ cd ../
 
 
 echo "Update: Dateien ausführbar machen..."
-sudo chmod +x bttrc_ev3.py
-sudo chmod +x bttrc_update.sh
-sudo chmod +x bttrc_calibrate.py
+chmod +x bttrc_ev3.py
+chmod +x bttrc_update.sh
+chmod +x bttrc_calibrate.py
 
 cd bttrc
 
-sudo chmod +x __init__.py
-sudo chmod +x chat.py
-sudo chmod +x morse.py
-sudo chmod +x printer.py
+chmod +x __init__.py
+chmod +x chat.py
+chmod +x morse.py
+chmod +x printer.py
 
 
 echo "Update beendet!"
