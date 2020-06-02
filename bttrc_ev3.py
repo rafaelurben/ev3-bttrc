@@ -19,9 +19,8 @@ def morse2chat():
 def chat2print():
     while True:
         txt = Chat.receive()
-        Printer.addToQueue(txt)
-        if not txt.startswith("//"):
-            Printer.addToQueue("//NEWLINE//")
+        Printer.addToQueue(txt.rstrip())
+        Printer.addToQueue(" ")
 
 if __name__ == "__main__":
     from ev3dev2.button import Button

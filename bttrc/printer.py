@@ -36,12 +36,9 @@ class Printer():
     _tank = MoveTank(OUTPUT_A, OUTPUT_B)
 
     _line_width = 1050                # NICHT ÄNDERN
-
     _line_position = _line_width/2
-
     _pen_is_down = False
-
-    _interrupt_processing_queue = False
+    _nowplaying = None
 
     @classmethod
     def _setState(self, state):
@@ -58,12 +55,14 @@ class Printer():
         elif state == "ERROR":
             setcolor("RED")
 
-        else:
-            print("[Printer] - Status nicht gefunden...")
+    @classmethod
+    def _stopsound(self):
+        if self._nowplaying is not None:
+            self._nowplaying.kill()
 
     @classmethod
     def _paper_is_in(self):
-        return bool(self.paperdetector.reflected_light_intensity > 3)
+        return bool(self.paperdetector.reflected_light_intensity > 2)
 
     @classmethod
     def _pen_up(self):
@@ -106,10 +105,9 @@ class Printer():
     @classmethod
     def _carriage_move(self, position=0):
         self._pen_up()
+        self.pensidemover.on_for_degrees(SpeedPercent(50), position-self._line_position)
         if position == 0:
-            self._reset_motors()
-        else:
-            self.pensidemover.on_for_degrees(SpeedPercent(50), position-self._line_position)
+            self.pensidemover.on_for_degrees(SpeedPercent(50), -20)
         self._line_position = position
 
     @classmethod
@@ -412,18 +410,25 @@ class Printer():
             move_a(pos, seg1) # letter spacing
             self._line_position = (self._line_position + letterwidth + seg1)
 
-        elif letter in ["//NEWLINE//"]:
-            self._carriage_return()
-        elif letter in ["//FEEDOUT//"]:
-            self._feed_out()
-        elif letter.startswith("//SOUND:") and letter.endswith("//"):
-            filename = letter[8:-2].lower()
-            try:
-                self.sound.play_file("/home/robot/ev3-bttrc/files/"+str(filename)+".wav", play_type=1)
-            except ValueError:
-                print("[Printer] - Tondatei nicht gefunden: "+str(filename)+".wav")
+        elif letter.startswith("//") and letter.endswith("//"):
+            command = letter.strip("/")
+            if command in ["NEWLINE"]:
+                self._carriage_return()
+            elif command in ["FEEDOUT"]:
+                self._feed_out()
+            elif command.startswith("SOUND:"):
+                self._stopsound()
+                filename = command[6::].lower()
+                try:
+                    self._nowplaying = self.sound.play_file("/home/robot/ev3-bttrc/files/"+str(filename)+".wav", play_type=1)
+                except ValueError:
+                    print("[Printer] - Tondatei nicht gefunden: "+str(filename)+".wav")
+            elif command in ["STOPSOUND"]:
+                self._stopsound()
+            else:
+                print("[Printer] - Unbekannter Befehl: "+str(command))
         else:
-            print("[Printer] - Unbekannter Buchstabe/Befehl: "+str(letter))
+            print("[Printer] - Unbekannter Buchstabe: "+str(letter))
 
         if self._line_position >= self._line_width:
             self._carriage_return()
@@ -489,6 +494,7 @@ class Printer():
         self._reset_motors(resetheight=True)
         time.sleep(2)
         self._pen_up()
+        self._carriage_move(self._line_width/2)
 
         self._led.all_off()
         print("[Printer] - Kalibrierung: Beendet...")
@@ -496,39 +502,49 @@ class Printer():
         
     @classmethod
     def addToQueue(self, string:str):
-        string = string.strip().upper()
-        if string.startswith("//"):
-            self.queue.append(string.strip())
-            print("[Printer] - Befehl zur Warteschlange hinzugefuegt: '"+string.strip().upper()+"'")
-        else:
-            string = string.replace("Ä", "AE").replace("Ö", "OE").replace("Ü", "UE")
-            for letter in string:
+        string = string.strip().upper().replace("Ä", "AE").replace("Ö", "OE").replace("Ü", "UE")
+        command = ""
+        for letter in string:
+            if (command != "") or letter == "/":
+                command += letter
+                if command.startswith("//") and command.endswith("//") and len(command) > 2:
+                    self.queue.append(command)
+                    #print("[Printer] - Befehl zur Warteschlange hinzugefuegt: '"+command+"'")
+                    command = ""
+                elif len(command) == 2 and not command == "//":
+                    for letter in command:
+                        self.queue.append(letter)
+                        #print("[Printer] - Zur Warteschlange hinzugefuegt: '"+letter+"'")
+                    command = ""
+            else:
                 self.queue.append(letter)
-                print("[Printer] - Zur Warteschlange hinzugefuegt: '"+letter+"'")
+                #print("[Printer] - Zur Warteschlange hinzugefuegt: '"+letter+"'")
 
     @classmethod
     def printQueue(self, queue):
-        self._interrupt_processing_queue = True
         time.sleep(0.5)
         for letter in queue:
             self._print_letter(letter)
-        self._interrupt_processing_queue = False
 
     @classmethod
     def processQueue(self):
         self._reset_motors()
-        self._setState("IDLE")
         while True:
+            self._setState("IDLE")
             if self._paper_is_in():
-                if not self._interrupt_processing_queue:
-                    if self.queue[:] != []:
-                        self._print_next()
-                    elif bool(self.button.down):
-                        self._setState("WORK")
-                        print("[Printer] - Papier wird ausgegeben...")
-                        self._feed_out()
-                    else:
-                        time.sleep(0.25)
+                if bool(self.button.down):
+                    self._setState("WORK")
+                    print("[Printer] - Papier wird ausgegeben...")
+                    self._feed_out()
+                elif bool(self.button.up):
+                    self._setState("WORK")
+                    print("[Printer] - Neue Zeile...")
+                    self._carriage_return()
+                elif bool(self.button.right):
+                    print("[Printer] - Audio stoppen...")
+                    self._stopsound()
+                elif self.queue[:] != []:
+                    self._print_next()
                 else:
                     time.sleep(0.25)
             else:

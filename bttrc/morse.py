@@ -52,66 +52,63 @@ class Morse():
     def _setState(self, state):
         setcolor = lambda color: self._led.set_color("LEFT", color.upper())
         if state == "PRESSED":
-            setcolor("YELLOW")
+            setcolor("ORANGE")
 
         elif state == "IDLE":
-            setcolor("ORANGE")
+            setcolor("YELLOW")
 
         elif state == "CANCEL":
             setcolor("RED")
-            self.sound.beep(args="-l 250")
+            self.sound.beep(args="-l 350")
 
         elif state == "CHAR_ADDED":
             setcolor("GREEN")
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             self._setState("IDLE")
 
         elif state == "SPACE_ADDED":
             setcolor("GREEN")
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
 
         elif state == "ERROR":
             setcolor("RED")
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
 
         elif state == "END":
             setcolor("GREEN")
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
 
         elif state == "DELETE_WORD":
             setcolor("GREEN")
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
+            self.sound.beep(args="-l 100")
             time.sleep(0.05)
-            self.sound.beep(args="-l 50")
-
-        else:
-            print("[Morse] - Status nicht gefunden...")
+            self.sound.beep(args="-l 100")
 
     @classmethod
     def _print(self, text="", char="", message=""):
-        print("[Morse] - Text: '"+prepareascii(text)+"' Char: '"+prepareascii(char)+"'"+((" Message: '"+prepareascii(message)+"'") if message else ""))
+        print("[Morse] - '"+prepareascii(text)+"' - '"+prepareascii(char)+"'"+((" - '"+prepareascii(message)+"'") if message else ""))
 
     @classmethod
     def enterText(self, press_short=0.15, press_timeout=1, rest_short=1, rest_timeout=3):
-        self._print("","","Warte auf Code...")
+        self._print("","","Bereit!")
 
         text = ""
         while True:
@@ -167,7 +164,7 @@ class Morse():
 
                     # Ende der Nachricht / Ende der Übertragung
                     elif char == ".-.-." or char == "...-.-":
-                        self._print(text, "", "Nachricht beendet!")
+                        self._print(text, "", "Beendet!")
 
                         self._setState("END")
                         return str(text)
@@ -183,7 +180,7 @@ class Morse():
 
                     # Fehler
                     else:
-                        self._print(text, char, "Nicht gefunden!!")
+                        self._print(text, char, "Nicht gefunden!")
 
                         self._setState("ERROR")
 

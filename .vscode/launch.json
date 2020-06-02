@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run",
+            "type": "ev3devBrowser",
+            "request": "launch",
+            "program": "/home/robot/ev3-bttrc/bttrc_ev3.py",
+            "preLaunchTask": "build"
+        }
+    ]
+}
