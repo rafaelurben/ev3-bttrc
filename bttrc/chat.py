@@ -24,41 +24,34 @@ class Chat():
             with open(os.path.join(os.getcwd(),".env"), mode="r") as file:
                 for line in file:
                     _env[line.split("=")[0]] = line.split("=")[1]
+
+            if not _chatkey:
+                if "EV3_CHATKEY" in _env:
+                    _chatkey = _env["EV3_CHATKEY"]
+                else:
+                    raise EnvironmentError("Environment variable missing: EV3_CHATKEY")
+
+            if not _chaturl:
+                if "EV3_CHATURL" in _env:
+                    _chaturl = _env["EV3_CHATURL"]
+                else:
+                    _chaturl = "https://rafaelurben.herokuapp.com/onlinevars/api/v1/"
+
         except FileNotFoundError:
             pass
 
-        if not _chatkey:
-            if "EV3_CHATKEY" in _env:
-                _chatkey = _env["EV3_CHATKEY"]
-            else:
-                raise EnvironmentError("Environment variable missing: EV3_CHATKEY")
-
-        if not _chaturl:
-            if "EV3_CHATURL" in _env:
-                _chaturl = _env["EV3_CHATURL"]
-            else:
-                _chaturl = "https://rafaelurben.herokuapp.com/onlinevars/api/v1/"
-
-    _chatname = "chat_"+_chatkey+"_"
-
-    toEV3 = str(_chaturl+_chatname+"toEV3")
-    fromEV3 = str(_chaturl+_chatname+"fromEV3")
+    toEV3 = str(_chaturl+"chat_"+_chatkey+"_toEV3")
+    fromEV3 = str(_chaturl+"chat_"+_chatkey+"_fromEV3")
 
     @classmethod
     def receive(self):
         try:
             url = self.toEV3
-            if "error" in requests.get(url).json():
-                print("[Chat] - Chat starten...")
-                requests.post(url,  data={"value": ""})
-
             print("[Chat] - Bereit!")
 
             while True:
-                r = requests.get(url)
-                json = r.json()
+                json = requests.get(url+"?create=true&clean=true").json()
                 if "value" in json and not json["value"] in ["", None]:
-                    requests.post(url, data={"value": ""})
                     print("\n[Chat] - Erhalten: '"+prepareascii(json["value"])+"'")
                     try:
                         self._sound.play_file("/home/robot/ev3-bttrc/files/message_received.wav")
@@ -78,7 +71,8 @@ class Chat():
     def send(self, value):
         try:
             url = self.fromEV3
-            requests.post(url, data={"value": value or ""})
+            requests.post(url, data={"value": value or "", "append": True})
+
             print("[Chat] - Gesendet: '"+prepareascii(value)+"'")
             try:
                 self._sound.play_file("/home/robot/ev3-bttrc/files/message_sent.wav")

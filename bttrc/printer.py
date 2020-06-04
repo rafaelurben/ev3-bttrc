@@ -430,7 +430,8 @@ class Printer():
         else:
             print("[Printer] - Unbekannter Buchstabe: "+str(letter))
 
-        if self._line_position >= self._line_width:
+        # Automatischer Zeilenumbruch am Ende der Zeile
+        if self._line_position > self._line_width-seg4: 
             self._carriage_return()
         self._setState("IDLE")
 
