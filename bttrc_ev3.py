@@ -30,7 +30,7 @@ if __name__ == "__main__":
     b = Button()
 
     l.all_off()
-    l.set_color("LEFT","RED")
+    l.set_color("LEFT",  "RED")
     l.set_color("RIGHT", "RED")
 
     print("[BTTRC] - Starten...")

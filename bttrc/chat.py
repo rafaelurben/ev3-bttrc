@@ -49,6 +49,7 @@ class Chat():
         try:
             url = self.toEV3
             if "error" in requests.get(url).json():
+                print("[Chat] - Chat starten...")
                 requests.post(url,  data={"value": ""})
 
             print("[Chat] - Bereit!")

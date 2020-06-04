@@ -104,10 +104,10 @@ class Morse():
 
     @classmethod
     def _print(self, text="", char="", message=""):
-        print("[Morse] - '"+prepareascii(text)+"' - '"+prepareascii(char)+"'"+((" - '"+prepareascii(message)+"'") if message else ""))
+        print("[Morse] - T: '"+prepareascii(text)+"' C: '"+prepareascii(char)+"'"+((" M:'"+prepareascii(message)+"'") if message else ""))
 
     @classmethod
-    def enterText(self, press_short=0.15, press_timeout=1, rest_short=1, rest_timeout=3):
+    def enterText(self, press_short=0.15, press_timeout=1, rest_short=1.5, rest_space=5):
         self._print("","","Bereit!")
 
         text = ""
@@ -185,7 +185,7 @@ class Morse():
                         self._setState("ERROR")
 
                     # Weiter warten
-                    if not self.touch.wait_for_pressed(timeout_ms=(rest_timeout-rest_short)*1000):
+                    if not self.touch.wait_for_pressed(timeout_ms=(rest_space-rest_short)*1000):
                         # Leerzeichen
                         if len(text) > 0 and not text[-1] == " ":
                             text += " "

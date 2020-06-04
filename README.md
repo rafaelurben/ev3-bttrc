@@ -4,10 +4,10 @@ Morsecode und Drucker für den EV3 Mindstorms mit ev3dev. Der Morsecode wird via
 
 ## Setup
 
-In beiden Setups sollte die Umgebungsvariable "EV3_CHATKEY" vorhanden sein, welche in beiden Fällen den gleichen Wert haben sollte.
-Dazu kann am Besten im Ordner `/home/robot/ev3-bttrc` eine Datei mit dem Namen `.env` und dem Inhalt `EV3_CHATKEY=*` erstellt werden, wobei * mit einer beliebigen Zahlen- oder Buchstabenfolge ersetzt werden sollte.
-
 ### EV3 Setup
+
+Auf dem EV3 muss die Umgebungsvariable "EV3_CHATKEY" vorhanden sein.
+Dazu kann am Besten im Ordner `/home/robot/ev3-bttrc` eine Datei mit dem Namen `.env` und dem Inhalt `EV3_CHATKEY=*` erstellt werden, wobei * mit einer beliebigen Zahlen- oder Buchstabenfolge ersetzt werden sollte.
 
 ```bash
 cd /home/robot
@@ -32,11 +32,9 @@ brickrun -r --directory="/home/robot/ev3-bttrc" "/home/robot/ev3-bttrc/bttrc_ev3
 
 Hinweis: Die letzten drei Commands könnten **sehr** lange dauern, die ist jedoch normal.
 
-### PC Setup
+### Chatpartner Setup
 
-1. Datei "bttrc_pc.py" herunterladen.
-2. Python 3.8 installieren
-3. Datei ausführen.
+Folgende Webseite öffnen, wobei CHATKEY mit dem beim EV3 gespeicherten Chatkey ausgetauscht werden sollte: [https://rafaelurben.herokuapp.com/onlinevars/chat/CHATKEY_toEV3/CHATKEY_fromEV3](https://rafaelurben.herokuapp.com/onlinevars/chat/CHATKEY_toEV3/CHATKEY_fromEV3)
 
 ## Benutzung
 

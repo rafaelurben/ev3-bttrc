@@ -5,11 +5,11 @@
 # 2020 - Rafael Urben
 #
 
-import os as _os
-from .chat import Chat
+print("[BTTRC] - Lade Module...")
 
-if not _os.getenv("EV3_PC", False):
-    print("[BTTRC] - Lade Module...")
-    from .morse import Morse
-    from .printer import Printer
+import os as _os
+
+from .chat import Chat
+from .morse import Morse
+from .printer import Printer
 
