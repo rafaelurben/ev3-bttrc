@@ -9,18 +9,23 @@ from bttrc import Chat, Morse, Printer
 from multiprocessing import Process
 import time
 
+
 def processQueue():
     Printer.processQueue()
 
+
 def morse2chat():
+    Chat.send("BTTRC ist bereit!")
     while True:
         Chat.send(Morse.enterText())
+
 
 def chat2print():
     while True:
         txt = Chat.receive()
         Printer.addToQueue(txt.rstrip())
         Printer.addToQueue(" ")
+
 
 if __name__ == "__main__":
     from ev3dev2.button import Button
