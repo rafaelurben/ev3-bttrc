@@ -15,7 +15,6 @@ def processQueue():
 
 
 def morse2chat():
-    Chat.send("[BTTRC] - Gestartet!")
     while True:
         Chat.send(Morse.enterText())
 
@@ -26,7 +25,7 @@ def chat2print():
         if not "//NOPRINT//" in txt:
             Printer.addToQueue(txt.rstrip())
             Printer.addToQueue(" ")
-        Chat.send("[BTTRC] - Nachricht erhalten!")
+        Chat.send("[BTTRC] - Nachricht erhalten!", nosound=True)
 
 
 if __name__ == "__main__":
@@ -51,6 +50,8 @@ if __name__ == "__main__":
     morse2chatprocess = Process(target=morse2chat)
     morse2chatprocess.start()
 
+    Chat.send("[BTTRC] - Gestartet!", nosound=True)
+
     print("[BTTRC] - Gestartet!")
 
     b.wait_for_bump("left")
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     chat2printprocess.terminate()
     morse2chatprocess.terminate()
 
-    Chat.send("[BTTRC] - Beendet!")
+    Chat.send("[BTTRC] - Beendet!", nosound=True)
 
     print("[BTTRC] - Beendet!")
 

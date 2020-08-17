@@ -68,21 +68,23 @@ class Chat():
             return "CHAT NICHT VERFÜGBAR"
 
     @classmethod
-    def send(self, value):
+    def send(self, value, nosound=False):
         try:
             url = self.fromEV3
             requests.post(url, data={"value": value or "", "append": True})
 
             print("[Chat] - Gesendet: '"+prepareascii(value)+"'")
-            try:
-                self._sound.play_file("/home/robot/ev3-bttrc/files/message_sent.wav")
-            except Exception as e:
-                pass
+            if not nosound:
+                try:
+                    self._sound.play_file("/home/robot/ev3-bttrc/files/message_sent.wav")
+                except Exception as e:
+                    pass
             return True
         except requests.exceptions.RequestException as e:
             print("[Chat] - Error:", e)
-            try:
-                self._sound.play_file("/home/robot/ev3-bttrc/files/message_error.wav")
-            except Exception as e:
-                pass
+            if not nosound:
+                try:
+                    self._sound.play_file("/home/robot/ev3-bttrc/files/message_error.wav")
+                except Exception as e:
+                    pass
             return False
